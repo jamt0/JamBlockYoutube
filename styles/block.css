@@ -1,0 +1,30 @@
+/* Expand video player when recommendations are hidden */
+.jam-no-recommendations #secondary {
+  display: none !important;
+}
+
+.jam-no-recommendations #primary {
+  max-width: 100% !important;
+}
+
+.jam-no-recommendations .ytd-watch-flexy #player-theater-container {
+  max-width: 100% !important;
+}
+
+/* Message shown on blocked pages */
+.jam-block-message {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  color: var(--yt-spec-text-secondary, #aaa);
+  font-family: "Roboto", sans-serif;
+  font-size: 1.4rem;
+  text-align: center;
+  gap: 0.5rem;
+}
+
+.jam-block-message span {
+  font-size: 3rem;
+}

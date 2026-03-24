@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Jam Block YouTube",
+  "description": "Block YouTube distractions: home feed, shorts, and recommendations",
+  "version": "1.0.0",
+  "permissions": ["storage"],
+  "icons": {
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": "icons/icon48.svg"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["dist/content.js"],
+      "css": ["styles/block.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

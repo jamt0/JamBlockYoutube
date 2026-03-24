@@ -1,0 +1,13 @@
+{
+  "name": "jam-block-youtube",
+  "version": "1.0.0",
+  "description": "Block YouTube distractions: home feed, shorts, and recommendations",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "typescript": "^5.7.3"
+  }
+}
