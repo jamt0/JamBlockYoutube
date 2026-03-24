@@ -1,28 +1,6 @@
-interface BlockSettings {
-  blockHomeFeed: boolean;
-  blockShorts: boolean;
-  blockRecommendations: boolean;
-}
-
-const DEFAULT_SETTINGS: BlockSettings = {
-  blockHomeFeed: true,
-  blockShorts: true,
-  blockRecommendations: true,
-};
-
 const BLOCKED_PATHS = ["/", "/feed/subscriptions", "/feed/trending", "/feed/explore"];
 
 const JAM_MESSAGE_ID = "jam-block-message";
-
-let settings: BlockSettings = { ...DEFAULT_SETTINGS };
-
-function loadSettings(): Promise<BlockSettings> {
-  return new Promise((resolve) => {
-    chrome.storage.sync.get(DEFAULT_SETTINGS, (result) => {
-      resolve(result as BlockSettings);
-    });
-  });
-}
 
 function isWatchPage(): boolean {
   return location.pathname === "/watch";
@@ -44,13 +22,8 @@ function hideAll(selector: string): void {
   document.querySelectorAll<HTMLElement>(selector).forEach(hide);
 }
 
-function showAll(selector: string): void {
-  document.querySelectorAll<HTMLElement>(selector).forEach(show);
-}
-
 /** Hide everything in the sidebar except Historial and Ver más tarde */
 function cleanSidebar(): void {
-  // --- Full guide (expanded sidebar) ---
   const guideEntries = document.querySelectorAll<HTMLElement>(
     "ytd-guide-section-renderer ytd-guide-entry-renderer"
   );
@@ -66,14 +39,11 @@ function cleanSidebar(): void {
     }
   }
 
-  // Hide section headers (Suscripciones, Tú, Explorar, etc.)
-  // but keep the section that contains history/watch-later visible
   const sections = document.querySelectorAll<HTMLElement>("ytd-guide-section-renderer");
   for (const section of sections) {
     const hasHistory = section.querySelector('a[href="/feed/history"]');
     if (hasHistory) {
       show(section);
-      // Hide the section title "Tú >"
       const title = section.querySelector<HTMLElement>("#guide-section-title");
       if (title) hide(title);
     } else {
@@ -81,13 +51,9 @@ function cleanSidebar(): void {
     }
   }
 
-  // Hide collapsible sections (extra subscriptions)
   hideAll("ytd-guide-collapsible-section-entry-renderer");
-
-  // Hide footer
   hideAll("ytd-guide-renderer #footer");
 
-  // --- Mini guide (collapsed sidebar icons) ---
   const miniEntries = document.querySelectorAll<HTMLElement>(
     "ytd-mini-guide-renderer ytd-mini-guide-entry-renderer"
   );
@@ -95,23 +61,12 @@ function cleanSidebar(): void {
     const link = entry.querySelector("a");
     if (!link) { hide(entry); continue; }
     const href = link.getAttribute("href") ?? "";
-    // Only keep home icon (needed for navigation)
     if (href === "/") {
       show(entry);
     } else {
       hide(entry);
     }
   }
-}
-
-function restoreSidebar(): void {
-  showAll("ytd-guide-section-renderer");
-  showAll("ytd-guide-section-renderer ytd-guide-entry-renderer");
-  showAll("ytd-guide-collapsible-section-entry-renderer");
-  showAll("ytd-guide-renderer #footer");
-  showAll("ytd-mini-guide-renderer ytd-mini-guide-entry-renderer");
-  const titles = document.querySelectorAll<HTMLElement>("#guide-section-title");
-  titles.forEach(show);
 }
 
 function showBlockMessage(): void {
@@ -150,47 +105,34 @@ const RECOMMENDATION_SELECTORS = [
 ];
 
 function applyBlocking(): void {
-  // Clean sidebar (always, to remove subscriptions/shorts/etc.)
-  if (settings.blockHomeFeed) {
-    cleanSidebar();
-  } else {
-    restoreSidebar();
-  }
+  // Clean sidebar
+  cleanSidebar();
 
   // Block feed on browse pages
-  if (settings.blockHomeFeed && isBrowsePage()) {
+  if (isBrowsePage()) {
     FEED_SELECTORS.forEach(hideAll);
     showBlockMessage();
   } else {
-    FEED_SELECTORS.forEach(showAll);
     removeBlockMessage();
   }
 
   // Block shorts everywhere
-  if (settings.blockShorts) {
-    SHORTS_SELECTORS.forEach(hideAll);
-    if (location.pathname.startsWith("/shorts")) {
-      window.location.replace("https://www.youtube.com/");
-    }
-  } else {
-    SHORTS_SELECTORS.forEach(showAll);
+  SHORTS_SELECTORS.forEach(hideAll);
+  if (location.pathname.startsWith("/shorts")) {
+    window.location.replace("https://www.youtube.com/");
   }
 
   // Block recommendations on watch page
-  if (settings.blockRecommendations && isWatchPage()) {
+  if (isWatchPage()) {
     RECOMMENDATION_SELECTORS.forEach(hideAll);
     document.body.classList.add("jam-no-recommendations");
   } else {
-    RECOMMENDATION_SELECTORS.forEach(showAll);
     document.body.classList.remove("jam-no-recommendations");
   }
 }
 
-// Observe DOM changes since YouTube is a SPA
 function startObserver(): void {
-  const observer = new MutationObserver(() => {
-    applyBlocking();
-  });
+  const observer = new MutationObserver(() => applyBlocking());
   observer.observe(document.body, { childList: true, subtree: true });
 }
 
@@ -206,20 +148,6 @@ function watchNavigation(): void {
   setInterval(check, 1000);
 }
 
-chrome.storage.onChanged.addListener((changes) => {
-  for (const key of Object.keys(changes)) {
-    if (key in settings) {
-      (settings as unknown as Record<string, boolean>)[key] = changes[key].newValue;
-    }
-  }
-  applyBlocking();
-});
-
-async function init(): Promise<void> {
-  settings = await loadSettings();
-  applyBlocking();
-  startObserver();
-  watchNavigation();
-}
-
-init();
+applyBlocking();
+startObserver();
+watchNavigation();
